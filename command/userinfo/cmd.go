@@ -33,6 +33,4 @@ To see help for a subcommand, use:
 
     simplelogin-cli userinfo [command] --help
 
-For full details on using simplelogin visit SimpleLogin's online documentation.
-
 `

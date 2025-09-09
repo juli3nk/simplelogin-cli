@@ -77,6 +77,4 @@ To see help for a subcommand, use:
 
     simplelogin-cli stats [command] --help
 
-For full details on using simplelogin visit SimpleLogin's online documentation.
-
 `
