@@ -35,6 +35,4 @@ To see help for a subcommand, use:
 
     simplelogin-cli domain [command] --help
 
-For full details on using simplelogin visit SimpleLogin's online documentation.
-
 `

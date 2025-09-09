@@ -28,6 +28,4 @@ To see help for a subcommand, use:
 
     simplelogin-cli auth [command] --help
 
-For full details on using simplelogin visit SimpleLogin's online documentation.
-
 `
