@@ -40,6 +40,8 @@ func newListCommand(outputFormat *string) *cobra.Command {
 	flags.BoolVarP(&aliasListEnabled, "enabled", "e", false, "Enabled aliases")
 	flags.StringVarP(&aliasListQuery, "query", "q", "", "Query aliases")
 
+	cmd.MarkFlagsMutuallyExclusive("pinned", "disabled", "enabled")
+
 	return cmd
 }
 
