@@ -1,0 +1,22 @@
+version: 2
+
+project_name: simplelogin-cli
+
+builds:
+  - id: simplelogin-cli
+    main: ./cmd/simplelogin-cli
+    binary: ./simplelogin-cli
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+#      - -linkmode external
+      - -extldflags -static
+      - -s
+      - -w
+      - -X github.com/juli3nk/simplelogin-cli/pkg/version.Version={{.Version}}
+      - -X github.com/juli3nk/simplelogin-cli/pkg/version.GitCommit={{.Commit}}
+      - -X github.com/juli3nk/simplelogin-cli/pkg/version.BuildDate={{.Date}}
+    goos:
+      - linux
+    goarch:
+      - amd64

@@ -4,72 +4,126 @@ on:
   push:
     branches:
       - develop
+  pull_request:
+    branches:
+      - develop
+
+env:
+  DAGGER_NO_NAG: "1"
 
 jobs:
-  ci:
+  detect:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      DAGGER_NO_NAG: "1"
+    outputs:
+      refs_base: ${{ steps.git-change-refs.outputs.base }}
+      refs_head: ${{ steps.git-change-refs.outputs.head }}
+      files_all: ${{ steps.git-changed-files.outputs.all }}
+      files_md: ${{ steps.git-changed-files.outputs.md }}
+      files_go: ${{ steps.git-changed-files.outputs.go }}
+      files_yaml: ${{ steps.git-changed-files.outputs.yaml }}
+      files_json: ${{ steps.git-changed-files.outputs.json }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Call Dagger Function to lint commit message
-        uses: dagger/dagger-for-github@8.0.0
+      - name: Call Dagger Function to git base and head references
+        id: git-change-refs
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: --source . lint-commit-msg --args '--last'
+          call: gitlocal change-refs github-output
 
-  lint:
+      - name: Call Dagger Function to git changed files
+        id: git-changed-files
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: gitlocal changed-files --ext 'md' --ext 'go' --ext 'yaml:yaml,yml' --ext 'json' github-output
+
+  git-governance:
+    needs: detect
     runs-on: ubuntu-latest
-    needs: [ci]
     permissions:
       contents: read
-    env:
-      DAGGER_NO_NAG: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Call Dagger Function to lint go files
-        uses: dagger/dagger-for-github@8.0.0
+      - name: Call Dagger Check to lint commit message
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: --source . lint-golang --check-only-modified-files=true
+          call: commitlint lint --from ${{ needs.detect.outputs.refs_base }} --to ${{ needs.detect.outputs.refs_head }}
 
-      - name: Call Dagger Function to lint json files
-        uses: dagger/dagger-for-github@8.0.0
+      - name: Call Dagger Check to lint commit message
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: --source . lint-json-file --check-only-modified-files=true
+          check: gitleaks:detect
 
-  format:
+  dependencies:
+    name: Dependencies
+    needs: [detect, git-governance]
+    if: ${{ fromJSON(needs.detect.outputs.files_go)[0] != null }}
     runs-on: ubuntu-latest
-    needs: [ci]
     permissions:
       contents: read
-    env:
-      DAGGER_NO_NAG: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Call Dagger Function to format go files
-        uses: dagger/dagger-for-github@8.0.0
+      - name: Call Dagger Function to go mod check
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: --source . format-go --check-only-modified-files=true
+          check: go:modcheck
+
+      - name: Call Dagger Function to govulncheck
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: go vuln-check
+
+  quality:
+    needs: dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Call Dagger Check to lint markdown files
+        if: ${{ fromJSON(needs.detect.outputs.files_md)[0] != null }}
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: markdown lint --paths-json='${{ toJSON(fromJSON(needs.detect.outputs.files_md)) }}'
+
+      - name: Call Dagger Check to lint json files
+        if: ${{ fromJSON(needs.detect.outputs.files_json)[0] != null }}
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: json lint --paths-json='${{ toJSON(fromJSON(needs.detect.outputs.files_json)) }}'
+
+      - name: Call Dagger Check to lint go files
+        if: ${{ fromJSON(needs.detect.outputs.files_go)[0] != null }}
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: go lint --paths-json='${{ toJSON(fromJSON(needs.detect.outputs.files_go)) }}'
+
+      - name: Call Dagger Check to format go files
+        if: ${{ fromJSON(needs.detect.outputs.files_go)[0] != null }}
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: go fmt --paths-json='${{ toJSON(fromJSON(needs.detect.outputs.files_go)) }}'
 
   build:
+    needs: quality
+    if: ${{ fromJSON(needs.detect.outputs.files_go)[0] != null }}
     runs-on: ubuntu-latest
-    needs: [ci, lint, format]
     permissions:
       contents: read
-    env:
-      DAGGER_NO_NAG: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Call Dagger Function to build
-        uses: dagger/dagger-for-github@8.0.0
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: --source . build stdout
+          call: goreleaser build
