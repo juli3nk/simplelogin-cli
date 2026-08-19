@@ -5,41 +5,32 @@ on:
     branches:
       - main
 
+env:
+  DAGGER_NO_NAG: "1"
+
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      DAGGER_NO_NAG: "1"
-    outputs:
-      tag: ${{ steps.get_tag.outputs.tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Call Dagger Function to release
-        uses: dagger/dagger-for-github@8.0.0
+        uses: dagger/dagger-for-github@v8.4.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          call: --source . release --github-token env:GITHUB_TOKEN --ci=true --dry-run=false
-
-      - name: Set Output Tag
-        id: get_tag
-        run: |
-          git fetch --tags --force
-          echo "tag=$(git describe --tags --abbrev=0)" >> "$GITHUB_OUTPUT"
+          call: semantic-release run --repo-token-env GITHUB_TOKEN --repo-token env:GITHUB_TOKEN --ci=true --dry-run=false
 
   publish:
+    needs: release
     runs-on: ubuntu-latest
-    needs: [release]
     permissions:
       contents: write
-    env:
-      DAGGER_NO_NAG: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release.outputs.tag }}
           fetch-depth: 0
@@ -47,6 +38,6 @@ jobs:
       - name: Call Dagger Function to build and push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: dagger/dagger-for-github@8.0.0
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: --source . build publish --token env:GITHUB_TOKEN
+          call: goreleaser release --token-env GITHUB_TOKEN --token env:GITHUB_TOKEN
