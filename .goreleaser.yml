@@ -1,0 +1,17 @@
+version: 2
+
+project_name: simplelogin-cli
+
+builds:
+  - id: simplelogin-cli
+    main: ./cmd/simplelogin-cli
+    binary: ./simplelogin-cli
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s
+      - -w
+    goos:
+      - linux
+    goarch:
+      - amd64
