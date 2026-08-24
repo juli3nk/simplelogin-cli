@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -21,7 +21,7 @@ type Client struct {
 	baseURL    string
 	apiKey     string
 	httpClient *http.Client
-	logger     *log.Logger
+	ctx        context.Context
 }
 
 // NewClient creates a new SimpleLogin API client with a custom base URL
@@ -30,37 +30,52 @@ type Client struct {
 // apiKey: The API key for authentication
 // Returns a configured client or an error if validation fails
 func NewClient(baseURL *string, apiKey string) (*Client, error) {
-	url := BaseURL
+	base := BaseURL
 
 	if apiKey == "" {
 		return nil, &ValidationError{Field: "apiKey", Message: "API key is required"}
 	}
 	if baseURL != nil {
-		url = *baseURL
+		base = *baseURL
+	}
+
+	if base == "" {
+		return nil, &ValidationError{Field: "baseURL", Message: "base URL is required"}
+	}
+	if _, err := url.Parse(base); err != nil {
+		return nil, &ValidationError{Field: "baseURL", Message: fmt.Sprintf("invalid base URL: %s", err)}
 	}
 
 	client := &Client{
-		baseURL: url,
+		baseURL: base,
 		apiKey:  apiKey,
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		logger: log.New(io.Discard, "", 0), // Default to no logging
+		ctx: context.Background(),
 	}
 
 	return client, nil
 }
 
-// SetLogger sets a custom logger for the client
-// This allows for custom logging configuration and output
-// logger: The logger instance to use for client logging
-func (c *Client) SetLogger(logger *log.Logger) {
-	c.logger = logger
+// WithContext returns a copy of the client configured to use the provided
+// context for all subsequent API requests. This allows callers (e.g. CLI
+// commands or tests) to control cancellation and timeouts.
+func (c *Client) WithContext(ctx context.Context) APIClient {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return &Client{
+		baseURL:    c.baseURL,
+		apiKey:     c.apiKey,
+		httpClient: c.httpClient,
+		ctx:        ctx,
+	}
 }
 
 // doRequest performs an HTTP request with the API key
 func (c *Client) doRequest(method, endpoint string, body io.Reader) (*http.Response, error) {
-	return c.doRequestWithContext(context.Background(), method, endpoint, body)
+	return c.doRequestWithContext(c.ctx, method, endpoint, body)
 }
 
 // doRequestWithContext performs an HTTP request with context support
@@ -72,6 +87,9 @@ func (c *Client) doRequestWithContext(ctx context.Context, method, endpoint stri
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// SimpleLogin uses the non-standard "Authentication" header instead of the
+	// more common "Authorization" header to pass the API key. Do not change this
+	// unless the SimpleLogin API documentation explicitly requires it.
 	req.Header.Set("Authentication", c.apiKey)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -85,51 +103,11 @@ func (c *Client) doRequestWithContext(ctx context.Context, method, endpoint stri
 	return resp, nil
 }
 
-// doRequestWithRetry performs an HTTP request with retry logic for rate limiting
-func (c *Client) doRequestWithRetry(method, endpoint string, body io.Reader) (*http.Response, error) {
-	return c.doRequestWithRetryAndContext(context.Background(), method, endpoint, body)
-}
-
-// doRequestWithRetryAndContext performs an HTTP request with retry logic and context support
-func (c *Client) doRequestWithRetryAndContext(ctx context.Context, method, endpoint string, body io.Reader) (*http.Response, error) {
-	maxRetries := 3
-
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		resp, err := c.doRequestWithContext(ctx, method, endpoint, body)
-		if err != nil {
-			return nil, err
-		}
-
-		// If not rate limited, return immediately
-		if resp.StatusCode != http.StatusTooManyRequests {
-			return resp, nil
-		}
-
-		// Handle rate limiting
-		retryAfter := 1
-		if retryAfterStr := resp.Header.Get("Retry-After"); retryAfterStr != "" {
-			if retry, err := strconv.Atoi(retryAfterStr); err == nil {
-				retryAfter = retry
-			}
-		}
-
-		resp.Body.Close()
-
-		// Wait before retrying
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Duration(retryAfter) * time.Second):
-			continue
-		}
-	}
-
-	return nil, fmt.Errorf("max retries exceeded")
-}
-
 // handleResponse handles the HTTP response and unmarshals JSON if needed
 func (c *Client) handleResponse(resp *http.Response, v interface{}) error {
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
