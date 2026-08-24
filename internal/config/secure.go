@@ -15,19 +15,22 @@ const (
 	user    = "default"
 )
 
-func SaveApiKey(apiKey string) error {
+func SaveAPIKey(apiKey string) error {
 	err := keyring.Set(service, user, apiKey)
 	if err == nil {
 		return nil
 	}
 
-	// Fallback : fichier ~/.app-cli/credentials.json
+	// Fallback: store the API key in a local file with restricted permissions.
+	// The keyring is preferred, but some environments (CI, containers, SSH
+	// sessions) do not provide one. The file is created with 0600 permissions.
 	fmt.Println("⚠️  Warning: keyring not available, falling back to local file storage.")
+	fmt.Println("   The API key will be stored in ~/.config/simplelogin-cli/credentials.json")
 
 	return saveApiKeyFile(apiKey)
 }
 
-func LoadApiKey() (string, error) {
+func LoadAPIKey() (string, error) {
 	apiKey, err := keyring.Get(service, user)
 	if err == nil {
 		return apiKey, nil
@@ -37,7 +40,7 @@ func LoadApiKey() (string, error) {
 	return loadApiKeyFile()
 }
 
-func DeleteApiKey() error {
+func DeleteAPIKey() error {
 	err := keyring.Delete(service, user)
 	if err == nil {
 		return nil
@@ -69,7 +72,10 @@ func saveApiKeyFile(apiKey string) error {
 		return err
 	}
 
-	data, _ := json.MarshalIndent(map[string]string{"api_key": apiKey}, "", "  ")
+	data, err := json.MarshalIndent(map[string]string{"api_key": apiKey}, "", "  ")
+	if err != nil {
+		return err
+	}
 	return os.WriteFile(path, data, 0600)
 }
 
