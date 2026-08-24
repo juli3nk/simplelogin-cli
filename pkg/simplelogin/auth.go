@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 )
 
 // LoginRequest represents the login request payload
@@ -21,7 +23,9 @@ type LoginResponse struct {
 
 // Login authenticates a user and returns an API key
 func Login(email, password, device string) (string, error) {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
 	data := LoginRequest{
 		Email:    email,
@@ -38,10 +42,15 @@ func Login(email, password, device string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("login request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := json.Marshal(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("login failed (status %d): failed to read error response: %w", resp.StatusCode, err)
+		}
 		return "", fmt.Errorf("login failed (status %d): %s", resp.StatusCode, string(body))
 	}
 
