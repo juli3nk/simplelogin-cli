@@ -261,6 +261,10 @@ func (c *Client) GetAllAliases(options AliasListOptions) ([]Alias, error) {
 
 // GetAlias retrieves a specific alias by ID
 func (c *Client) GetAlias(aliasID int) (*Alias, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d", aliasID)
 
 	resp, err := c.doRequest(http.MethodGet, endpoint, nil)
@@ -278,6 +282,10 @@ func (c *Client) GetAlias(aliasID int) (*Alias, error) {
 
 // DeleteAlias deletes an alias by ID
 func (c *Client) DeleteAlias(aliasID int) (bool, error) {
+	if aliasID <= 0 {
+		return false, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d", aliasID)
 
 	resp, err := c.doRequest(http.MethodDelete, endpoint, nil)
@@ -295,6 +303,10 @@ func (c *Client) DeleteAlias(aliasID int) (bool, error) {
 
 // ToggleAlias enables or disables an alias
 func (c *Client) ToggleAlias(aliasID int) (*AliasToggleResponse, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d/toggle", aliasID)
 
 	resp, err := c.doRequest(http.MethodPost, endpoint, nil)
@@ -312,6 +324,10 @@ func (c *Client) ToggleAlias(aliasID int) (*AliasToggleResponse, error) {
 
 // GetAliasActivities retrieves all activities for a specific alias
 func (c *Client) GetAliasActivities(aliasID, pageID int) ([]AliasActivity, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d/activities?page_id=%d", aliasID, pageID)
 
 	resp, err := c.doRequest(http.MethodGet, endpoint, nil)
@@ -329,6 +345,10 @@ func (c *Client) GetAliasActivities(aliasID, pageID int) ([]AliasActivity, error
 
 // GetAllAliasActivities retrieves all activities for a specific alias across all pages
 func (c *Client) GetAllAliasActivities(aliasID int) ([]AliasActivity, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	var allActivities []AliasActivity
 	pageID := 0
 
@@ -351,6 +371,10 @@ func (c *Client) GetAllAliasActivities(aliasID int) ([]AliasActivity, error) {
 
 // UpdateAlias updates an alias's information
 func (c *Client) UpdateAlias(aliasID int, options AliasUpdateOptions) error {
+	if aliasID <= 0 {
+		return &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d", aliasID)
 
 	jsonData, err := json.Marshal(options)
@@ -372,6 +396,10 @@ func (c *Client) UpdateAlias(aliasID int, options AliasUpdateOptions) error {
 
 // GetAliasContacts retrieves contacts for a specific alias with pagination
 func (c *Client) GetAliasContacts(aliasID, pageID int) ([]AliasContact, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d/contacts?page_id=%d", aliasID, pageID)
 
 	resp, err := c.doRequest(http.MethodGet, endpoint, nil)
@@ -389,6 +417,10 @@ func (c *Client) GetAliasContacts(aliasID, pageID int) ([]AliasContact, error) {
 
 // GetAllAliasContacts retrieves all contacts for a specific alias across all pages
 func (c *Client) GetAllAliasContacts(aliasID int) ([]AliasContact, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	var allContacts []AliasContact
 	pageID := 0
 
@@ -411,6 +443,10 @@ func (c *Client) GetAllAliasContacts(aliasID int) ([]AliasContact, error) {
 
 // CreateAliasContact creates a new contact for an alias
 func (c *Client) CreateAliasContact(aliasID int, contact string) (*AliasContactCreateResponse, error) {
+	if aliasID <= 0 {
+		return nil, &ValidationError{Field: "aliasID", Message: "alias ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/aliases/%d/contacts", aliasID)
 
 	jsonData, err := json.Marshal(map[string]string{"contact": contact})

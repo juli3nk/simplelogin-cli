@@ -15,6 +15,10 @@ type ContactBlockResponse struct {
 
 // DeleteContact deletes a contact
 func (c *Client) DeleteContact(contactID int) (*ContactDeleteResponse, error) {
+	if contactID <= 0 {
+		return nil, &ValidationError{Field: "contactID", Message: "contact ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/contacts/%d", contactID)
 
 	resp, err := c.doRequest(http.MethodDelete, endpoint, nil)
@@ -32,6 +36,10 @@ func (c *Client) DeleteContact(contactID int) (*ContactDeleteResponse, error) {
 
 // ToggleContact blocks a contact
 func (c *Client) ToggleContact(contactID int) (*ContactBlockResponse, error) {
+	if contactID <= 0 {
+		return nil, &ValidationError{Field: "contactID", Message: "contact ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/contacts/%d/toggle", contactID)
 
 	resp, err := c.doRequest(http.MethodPatch, endpoint, nil)

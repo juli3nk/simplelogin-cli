@@ -59,6 +59,10 @@ func (c *Client) GetDomains() ([]Domain, error) {
 
 // CreateDomain creates a new custom domain
 func (c *Client) UpdateDomain(domainID int, updateDomain UpdateDomain) (*Domain, error) {
+	if domainID <= 0 {
+		return nil, &ValidationError{Field: "domainID", Message: "domain ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/custom_domains/%d", domainID)
 
 	jsonData, err := json.Marshal(updateDomain)
@@ -81,6 +85,10 @@ func (c *Client) UpdateDomain(domainID int, updateDomain UpdateDomain) (*Domain,
 
 // DeleteDomain deletes a domain by ID
 func (c *Client) GetDeletedAliasesDomain(domainID int) ([]TrashAlias, error) {
+	if domainID <= 0 {
+		return nil, &ValidationError{Field: "domainID", Message: "domain ID must be positive"}
+	}
+
 	endpoint := fmt.Sprintf("/custom_domains/%d/trash", domainID)
 
 	resp, err := c.doRequest(http.MethodGet, endpoint, nil)
