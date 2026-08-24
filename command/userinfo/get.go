@@ -2,12 +2,10 @@ package userinfo
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +15,8 @@ func newGetCommand(outputFormat *string) *cobra.Command {
 		Short: "Get user info",
 		Long:  getDescription,
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			runGet(outputFormat)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runGet(cmd, outputFormat)
 		},
 	}
 
@@ -27,27 +25,17 @@ func newGetCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runGet(outputFormat *string) {
+func runGet(cmd *cobra.Command, outputFormat *string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	userInfo, err := client.GetUserInfo()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -56,7 +44,7 @@ func runGet(outputFormat *string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Name: %s\n", userInfo.Name)
@@ -66,6 +54,8 @@ func runGet(outputFormat *string) {
 		fmt.Printf("Profile Picture URL: %s\n", userInfo.ProfilePictureURL)
 		fmt.Printf("Max Alias Free Plan: %d\n", userInfo.MaxAliasFreePlan)
 	}
+
+	return nil
 }
 
 const getDescription = `

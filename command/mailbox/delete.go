@@ -2,7 +2,6 @@ package mailbox
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
@@ -23,8 +22,8 @@ func newDeleteCommand(outputFormat *string) *cobra.Command {
 		Short:   "Delete mailbox",
 		Long:    deleteDescription,
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runDelete(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runDelete(cmd, outputFormat, args)
 		},
 	}
 
@@ -35,41 +34,31 @@ func newDeleteCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runDelete(outputFormat *string, args []string) {
+func runDelete(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	mailboxID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	transferAliasesToID, err := strconv.Atoi(transferAliasesTo)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	mailboxDeleteOptions := simplelogin.MailboxDeleteOptions{
-		TransferAliasesTo: &transferAliasesToID,
+	mailboxDeleteOptions := simplelogin.MailboxDeleteOptions{}
+	if transferAliasesTo != "" {
+		transferAliasesToID, err := strconv.Atoi(transferAliasesTo)
+		if err != nil {
+			return err
+		}
+		mailboxDeleteOptions.TransferAliasesTo = &transferAliasesToID
 	}
 
 	err = client.DeleteMailbox(mailboxID, mailboxDeleteOptions)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -78,11 +67,13 @@ func runDelete(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Mailbox deleted\n")
 	}
+
+	return nil
 }
 
 const deleteDescription = `

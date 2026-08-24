@@ -9,8 +9,8 @@ func NewCommand() *cobra.Command {
 		Use:   "auth",
 		Short: "Manage auth",
 		Long:  authDescription,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Usage()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Usage()
 		},
 	}
 

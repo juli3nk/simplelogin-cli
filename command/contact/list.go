@@ -2,13 +2,11 @@ package contact
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +17,8 @@ func newListCommand(outputFormat *string) *cobra.Command {
 		Short:   "List contacts",
 		Long:    listDescription,
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runList(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runList(cmd, outputFormat, args)
 		},
 	}
 
@@ -30,32 +28,22 @@ func newListCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runList(outputFormat *string, args []string) {
+func runList(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	contacts, err := client.GetAllAliasContacts(aliasID)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Handle different output formats
@@ -63,19 +51,19 @@ func runList(outputFormat *string, args []string) {
 	case "json":
 		if len(contacts) == 0 {
 			fmt.Printf("%v\n", contacts)
-			return
+			return nil
 		}
 
 		if err := display.DisplayData(contacts, &display.DisplayOptions{
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default: // table
 		if len(contacts) == 0 {
 			fmt.Println("No contacts found for this alias.")
-			return
+			return nil
 		}
 
 		tableOpts := display.DefaultTableOptions()
@@ -105,6 +93,8 @@ func runList(outputFormat *string, args []string) {
 		table.Render()
 		fmt.Printf("\nTotal: %d contacts\n", len(contacts))
 	}
+
+	return nil
 }
 
 const listDescription = `

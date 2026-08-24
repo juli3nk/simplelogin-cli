@@ -2,13 +2,11 @@ package alias
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +16,8 @@ func newGetCommand(outputFormat *string) *cobra.Command {
 		Short: "Get an alias",
 		Long:  getDescription,
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runGet(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runGet(cmd, outputFormat, args)
 		},
 	}
 
@@ -28,32 +26,22 @@ func newGetCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runGet(outputFormat *string, args []string) {
+func runGet(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	alias, err := client.GetAlias(aliasID)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -62,7 +50,7 @@ func runGet(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Creation Date: %s\n", alias.CreationDate)
@@ -80,6 +68,8 @@ func runGet(outputFormat *string, args []string) {
 		fmt.Printf("Note: %s\n", alias.Note)
 		fmt.Printf("Pinned: %t\n", alias.Pinned)
 	}
+
+	return nil
 }
 
 const getDescription = `

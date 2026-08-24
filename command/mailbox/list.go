@@ -2,12 +2,10 @@ package mailbox
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +16,8 @@ func newListCommand(outputFormat *string) *cobra.Command {
 		Short:   "List mailboxes",
 		Long:    listDescription,
 		Args:    cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			runList(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runList(cmd, outputFormat, args)
 		},
 	}
 
@@ -29,46 +27,36 @@ func newListCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runList(outputFormat *string, args []string) {
+func runList(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	mailboxes, err := client.GetMailboxes()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
 	case "json":
 		if len(mailboxes) == 0 {
 			fmt.Printf("%v\n", mailboxes)
-			return
+			return nil
 		}
 
 		if err := display.DisplayData(mailboxes, &display.DisplayOptions{
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default: // table
 		if len(mailboxes) == 0 {
 			fmt.Println("No mailboxes found.")
-			return
+			return nil
 		}
 
 		table := display.NewTable(nil)
@@ -93,6 +81,8 @@ func runList(outputFormat *string, args []string) {
 		table.Render()
 		fmt.Printf("\nTotal: %d mailboxes\n", len(mailboxes))
 	}
+
+	return nil
 }
 
 const listDescription = `

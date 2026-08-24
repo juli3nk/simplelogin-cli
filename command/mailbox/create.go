@@ -2,12 +2,10 @@ package mailbox
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +16,8 @@ func newCreateCommand(outputFormat *string) *cobra.Command {
 		Short:   "Create mailbox",
 		Long:    createDescription,
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runCreate(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCreate(cmd, outputFormat, args)
 		},
 	}
 
@@ -28,27 +26,17 @@ func newCreateCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runCreate(outputFormat *string, args []string) {
+func runCreate(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	mailbox, err := client.CreateMailbox(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -57,7 +45,7 @@ func runCreate(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("ID: %d\n", mailbox.ID)
@@ -65,6 +53,8 @@ func runCreate(outputFormat *string, args []string) {
 		fmt.Printf("Verified: %t\n", mailbox.Verified)
 		fmt.Printf("Default: %t\n", mailbox.Default)
 	}
+
+	return nil
 }
 
 const createDescription = `

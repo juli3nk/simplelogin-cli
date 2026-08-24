@@ -14,8 +14,8 @@ func NewCommand(outputFormat *string) *cobra.Command {
 		Use:   "mailbox",
 		Short: "Manage mailboxes",
 		Long:  mailboxDescription,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Usage()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Usage()
 		},
 	}
 

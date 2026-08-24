@@ -2,12 +2,10 @@ package domain
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +16,8 @@ func newListCommand(outputFormat *string) *cobra.Command {
 		Short:   "List domains",
 		Long:    listDescription,
 		Args:    cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			runList(outputFormat)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runList(cmd, outputFormat)
 		},
 	}
 
@@ -29,46 +27,36 @@ func newListCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runList(outputFormat *string) {
+func runList(cmd *cobra.Command, outputFormat *string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	domains, err := client.GetDomains()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
 	case "json":
 		if len(domains) == 0 {
 			fmt.Printf("%v\n", domains)
-			return
+			return nil
 		}
 
 		if err := display.DisplayData(domains, &display.DisplayOptions{
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default: // table
 		if len(domains) == 0 {
 			fmt.Println("No domains found.")
-			return
+			return nil
 		}
 
 		tableOpts := display.DefaultTableOptions()
@@ -91,6 +79,8 @@ func runList(outputFormat *string) {
 
 		table.Render()
 	}
+
+	return nil
 }
 
 const listDescription = `

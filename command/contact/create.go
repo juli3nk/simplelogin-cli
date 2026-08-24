@@ -2,13 +2,11 @@ package contact
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -18,9 +16,9 @@ func newCreateCommand(outputFormat *string) *cobra.Command {
 		Aliases: []string{"c"},
 		Short:   "Create contact",
 		Long:    createDescription,
-		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runCreate(outputFormat, args)
+		Args:    cobra.ExactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCreate(cmd, outputFormat, args)
 		},
 	}
 
@@ -29,32 +27,22 @@ func newCreateCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runCreate(outputFormat *string, args []string) {
+func runCreate(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	contact, err := client.CreateAliasContact(aliasID, args[1])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -63,7 +51,7 @@ func runCreate(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Contact ID: %d\n", contact.ID)
@@ -76,6 +64,8 @@ func runCreate(outputFormat *string, args []string) {
 		fmt.Printf("Contact block forward: %t\n", contact.BlockForward)
 		fmt.Printf("Contact existed: %t\n", contact.Existed)
 	}
+
+	return nil
 }
 
 const createDescription = `

@@ -2,12 +2,10 @@ package alias
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -22,8 +20,8 @@ func newCreateRandomCommand(outputFormat *string) *cobra.Command {
 		Short: "Create random alias",
 		Long:  createRandomDescription,
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runCreateRandom(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCreateRandom(cmd, outputFormat, args)
 		},
 	}
 
@@ -36,29 +34,19 @@ func newCreateRandomCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runCreateRandom(outputFormat *string, args []string) {
+func runCreateRandom(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	hostname := args[0]
 
 	alias, err := client.CreateRandomAlias(hostname, createRandomMode, createRandomNote)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -67,7 +55,7 @@ func runCreateRandom(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("CreationDate: %s\n", alias.CreationDate)
@@ -87,6 +75,8 @@ func runCreateRandom(outputFormat *string, args []string) {
 		fmt.Printf("Note: %s\n", alias.Note)
 		fmt.Printf("Pinned: %t\n", alias.Pinned)
 	}
+
+	return nil
 }
 
 const createRandomDescription = `

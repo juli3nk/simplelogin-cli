@@ -2,12 +2,10 @@ package stats
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -21,8 +19,8 @@ func NewCommand(outputFormat *string) *cobra.Command {
 		Short: "Manage stats",
 		Long:  statsDescription,
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			runStats(outputFormat)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runStats(cmd, outputFormat)
 		},
 	}
 
@@ -31,27 +29,17 @@ func NewCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runStats(outputFormat *string) {
+func runStats(cmd *cobra.Command, outputFormat *string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	stats, err := client.GetStats()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -60,7 +48,7 @@ func runStats(outputFormat *string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Nb Alias: %d\n", stats.NBAlias)
@@ -68,13 +56,15 @@ func runStats(outputFormat *string) {
 		fmt.Printf("Nb Forward: %d\n", stats.NBForward)
 		fmt.Printf("Nb Reply: %d\n", stats.NBReply)
 	}
+
+	return nil
 }
 
 const statsDescription = `
-The **simplelogin-cli stats** command has subcommands for managing settings.
+Display account statistics.
 
-To see help for a subcommand, use:
+The **simplelogin-cli stats** command shows the number of aliases, blocked,
+forwarded and replied emails for the authenticated account.
 
-    simplelogin-cli stats [command] --help
-
+Use --output json to get the result as JSON.
 `

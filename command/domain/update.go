@@ -2,7 +2,6 @@ package domain
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
@@ -26,8 +25,8 @@ func newUpdateCommand(outputFormat *string) *cobra.Command {
 		Short:   "Update domain",
 		Long:    updateDescription,
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runUpdate(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runUpdate(cmd, outputFormat, args)
 		},
 	}
 
@@ -42,31 +41,21 @@ func newUpdateCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runUpdate(outputFormat *string, args []string) {
+func runUpdate(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
 	if !catchAll && !randomPrefixGeneration && name == "" && len(mailboxIds) == 0 {
-		log.Fatal("No update provided")
+		return fmt.Errorf("no update provided")
 	}
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	domainID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	domainInput := simplelogin.UpdateDomain{}
@@ -85,7 +74,7 @@ func runUpdate(outputFormat *string, args []string) {
 
 	domain, err := client.UpdateDomain(domainID, domainInput)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -94,7 +83,7 @@ func runUpdate(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("CatchAll: %t\n", domain.CatchAll)
@@ -108,6 +97,8 @@ func runUpdate(outputFormat *string, args []string) {
 		fmt.Printf("NbAlias: %d\n", domain.NbAlias)
 		fmt.Printf("RandomPrefixGeneration: %t\n", domain.RandomPrefixGeneration)
 	}
+
+	return nil
 }
 
 const updateDescription = `

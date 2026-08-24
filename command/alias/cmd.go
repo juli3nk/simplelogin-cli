@@ -14,8 +14,8 @@ func NewCommand(outputFormat *string) *cobra.Command {
 		Use:   "alias",
 		Short: "Manage aliases",
 		Long:  aliasDescription,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Usage()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Usage()
 		},
 	}
 
@@ -28,7 +28,7 @@ func NewCommand(outputFormat *string) *cobra.Command {
 		newListCommand(outputFormat),
 		newOptionsCommand(outputFormat),
 		newToggleCommand(outputFormat),
-		newUpdateCommand(),
+		newUpdateCommand(outputFormat),
 	)
 
 	return cmd

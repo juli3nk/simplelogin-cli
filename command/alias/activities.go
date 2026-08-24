@@ -2,13 +2,11 @@ package alias
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -19,8 +17,8 @@ func newActivitiesCommand(outputFormat *string) *cobra.Command {
 		Short:   "List alias activities",
 		Long:    activitiesDescription,
 		Args:    cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			runActivities(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runActivities(cmd, outputFormat, args)
 		},
 	}
 
@@ -30,56 +28,46 @@ func newActivitiesCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runActivities(outputFormat *string, args []string) {
+func runActivities(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	pageID, err := strconv.Atoi(args[1])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	activities, err := client.GetAliasActivities(aliasID, pageID)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
 	case "json":
 		if len(activities) == 0 {
 			fmt.Printf("%v\n", activities)
-			return
+			return nil
 		}
 
 		if err := display.DisplayData(activities, &display.DisplayOptions{
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default: // table
 		if len(activities) == 0 {
 			fmt.Println("No activities found.")
-			return
+			return nil
 		}
 
 		tableOpts := display.DefaultTableOptions()
@@ -107,6 +95,8 @@ func runActivities(outputFormat *string, args []string) {
 		table.Render()
 		fmt.Printf("\nTotal: %d activities\n", len(activities))
 	}
+
+	return nil
 }
 
 const activitiesDescription = `

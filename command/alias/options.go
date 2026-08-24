@@ -2,12 +2,10 @@ package alias
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +15,8 @@ func newOptionsCommand(outputFormat *string) *cobra.Command {
 		Short: "Get alias options",
 		Long:  optionsDescription,
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runOptions(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runOptions(cmd, outputFormat, args)
 		},
 	}
 
@@ -27,27 +25,17 @@ func newOptionsCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runOptions(outputFormat *string, args []string) {
+func runOptions(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasOptions, err := client.GetAliasOptions(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -56,7 +44,7 @@ func runOptions(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Can Create: %t\n", aliasOptions.CanCreate)
@@ -68,6 +56,8 @@ func runOptions(outputFormat *string, args []string) {
 			fmt.Printf("Is Premium: %t\n", suffix.IsPremium)
 		}
 	}
+
+	return nil
 }
 
 const optionsDescription = `

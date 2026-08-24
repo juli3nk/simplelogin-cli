@@ -2,7 +2,6 @@ package alias
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
@@ -26,8 +25,8 @@ func newListCommand(outputFormat *string) *cobra.Command {
 		Short:   "List aliases",
 		Long:    listDescription,
 		Args:    cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runList(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runList(cmd, outputFormat, args)
 		},
 	}
 
@@ -43,22 +42,12 @@ func newListCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runList(outputFormat *string, args []string) {
+func runList(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	opts := simplelogin.AliasListOptions{
@@ -70,31 +59,31 @@ func runList(outputFormat *string, args []string) {
 
 	pageID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliases, err := client.GetAliases(opts, pageID)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
 	case "json":
 		if len(aliases) == 0 {
 			fmt.Printf("%v\n", aliases)
-			return
+			return nil
 		}
 
 		if err := display.DisplayData(aliases, &display.DisplayOptions{
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default: // table
 		if len(aliases) == 0 {
 			fmt.Println("No aliases found.")
-			return
+			return nil
 		}
 
 		tableOpts := display.DefaultTableOptions()
@@ -132,6 +121,8 @@ func runList(outputFormat *string, args []string) {
 		table.Render()
 		fmt.Printf("\nTotal: %d aliases\n", len(aliases))
 	}
+
+	return nil
 }
 
 const listDescription = `

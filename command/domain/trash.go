@@ -2,13 +2,11 @@ package domain
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
-	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
 	"github.com/spf13/cobra"
 )
 
@@ -18,8 +16,8 @@ func newTrashCommand(outputFormat *string) *cobra.Command {
 		Short: "Trash domains",
 		Long:  trashDescription,
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runTrash(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runTrash(cmd, outputFormat, args)
 		},
 	}
 
@@ -29,51 +27,41 @@ func newTrashCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runTrash(outputFormat *string, args []string) {
+func runTrash(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	domainID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliases, err := client.GetDeletedAliasesDomain(domainID)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
 	case "json":
 		if len(aliases) == 0 {
 			fmt.Printf("%v\n", aliases)
-			return
+			return nil
 		}
 
 		if err := display.DisplayData(aliases, &display.DisplayOptions{
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default: // table
 		if len(aliases) == 0 {
 			fmt.Println("No aliases found.")
-			return
+			return nil
 		}
 
 		tableOpts := display.DefaultTableOptions()
@@ -91,6 +79,8 @@ func runTrash(outputFormat *string, args []string) {
 
 		table.Render()
 	}
+
+	return nil
 }
 
 const trashDescription = `

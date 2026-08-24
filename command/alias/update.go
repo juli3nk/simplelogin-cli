@@ -1,7 +1,7 @@
 package alias
 
 import (
-	"log"
+	"fmt"
 	"strconv"
 
 	"github.com/juli3nk/go-utils"
@@ -18,14 +18,16 @@ var (
 	pinned     bool
 )
 
-func newUpdateCommand() *cobra.Command {
+func newUpdateCommand(outputFormat *string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "update [alias_id]",
 		Aliases: []string{"up"},
 		Short:   "Update alias",
 		Long:    updateDescription,
 		Args:    cobra.ExactArgs(1),
-		Run:     runUpdate,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runUpdate(cmd, outputFormat, args)
+		},
 	}
 
 	flags := cmd.Flags()
@@ -40,31 +42,21 @@ func newUpdateCommand() *cobra.Command {
 	return cmd
 }
 
-func runUpdate(cmd *cobra.Command, args []string) {
+func runUpdate(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
 	if note == "" && name == "" && len(mailboxIds) == 0 && !disablePGP && !pinned {
-		log.Fatal("No update provided")
+		return fmt.Errorf("no update provided")
 	}
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasID, err := strconv.Atoi(args[0])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	aliasInput := simplelogin.AliasUpdateOptions{}
@@ -86,8 +78,10 @@ func runUpdate(cmd *cobra.Command, args []string) {
 
 	err = client.UpdateAlias(aliasID, aliasInput)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
 
 const updateDescription = `

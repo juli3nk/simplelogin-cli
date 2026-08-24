@@ -2,9 +2,7 @@ package setting
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
 	"github.com/juli3nk/simplelogin-cli/internal/display"
 	"github.com/juli3nk/simplelogin-cli/pkg/simplelogin"
@@ -25,8 +23,8 @@ func newUpdateCommand(outputFormat *string) *cobra.Command {
 		Short: "Update setting",
 		Long:  updateDescription,
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, args []string) {
-			runUpdate(outputFormat)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runUpdate(cmd, outputFormat)
 		},
 	}
 
@@ -42,26 +40,14 @@ func newUpdateCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runUpdate(outputFormat *string) {
-	defer utils.RecoverFunc()
-
-	if aliasGenerator == "" && notification == false && randomAliasDefaultDomain == "" && senderFormat == "" && randomAliasSuffix == "" {
-		log.Fatal("No update provided")
+func runUpdate(cmd *cobra.Command, outputFormat *string) error {
+	if aliasGenerator == "" && !notification && randomAliasDefaultDomain == "" && senderFormat == "" && randomAliasSuffix == "" {
+		return fmt.Errorf("no update provided")
 	}
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	settingInput := simplelogin.Setting{}
@@ -83,7 +69,7 @@ func runUpdate(outputFormat *string) {
 
 	setting, err := client.UpdateSetting(settingInput)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -92,7 +78,7 @@ func runUpdate(outputFormat *string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("Alias Generator: %s\n", setting.AliasGenerator)
@@ -101,6 +87,8 @@ func runUpdate(outputFormat *string) {
 		fmt.Printf("Sender Format: %s\n", setting.SenderFormat)
 		fmt.Printf("Random Alias Suffix: %s\n", setting.RandomAliasSuffix)
 	}
+
+	return nil
 }
 
 const updateDescription = `

@@ -2,7 +2,6 @@ package alias
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/juli3nk/go-utils"
 	"github.com/juli3nk/simplelogin-cli/internal/config"
@@ -25,8 +24,8 @@ func newCreateNewCommand(outputFormat *string) *cobra.Command {
 		Short: "Create new alias",
 		Long:  createNewDescription,
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			runCreateNew(outputFormat, args)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCreateNew(cmd, outputFormat, args)
 		},
 	}
 
@@ -42,22 +41,12 @@ func newCreateNewCommand(outputFormat *string) *cobra.Command {
 	return cmd
 }
 
-func runCreateNew(outputFormat *string, args []string) {
+func runCreateNew(cmd *cobra.Command, outputFormat *string, args []string) error {
 	defer utils.RecoverFunc()
 
-	cfg, err := config.Load()
+	client, err := config.ClientFactoryWithContext(cmd.Context())
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	apiKey, err := config.LoadApiKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	client, err := simplelogin.NewClient(cfg.ApiURL, apiKey)
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	hostname := args[0]
@@ -76,7 +65,7 @@ func runCreateNew(outputFormat *string, args []string) {
 
 	alias, err := client.CreateCustomAlias(hostname, input)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	switch *outputFormat {
@@ -85,7 +74,7 @@ func runCreateNew(outputFormat *string, args []string) {
 			Format:  display.FormatJSON,
 			Compact: compact,
 		}); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		fmt.Printf("CreationDate: %s\n", alias.CreationDate)
@@ -105,6 +94,8 @@ func runCreateNew(outputFormat *string, args []string) {
 		fmt.Printf("Note: %s\n", alias.Note)
 		fmt.Printf("Pinned: %t\n", alias.Pinned)
 	}
+
+	return nil
 }
 
 const createNewDescription = `

@@ -13,8 +13,8 @@ func NewCommand(outputFormat *string) *cobra.Command {
 		Use:   "userinfo",
 		Short: "Manage user info",
 		Long:  userinfoDescription,
-		Run: func(cmd *cobra.Command, args []string) {
-			cmd.Usage()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Usage()
 		},
 	}
 
