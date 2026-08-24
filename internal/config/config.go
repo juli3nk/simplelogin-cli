@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	ApiURL *string `json:"api_url"`
+	APIURL *string `json:"api_url"`
 }
 
 func configPath() (string, error) {
