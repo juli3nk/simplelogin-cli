@@ -2,6 +2,7 @@ package display
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -31,7 +32,13 @@ func DefaultDisplayOptions() *DisplayOptions {
 	}
 }
 
-// DisplayData displays data in the specified format
+// DisplayData displays data in the specified format.
+//
+// JSON output is handled here. Table output is intentionally not implemented
+// because rendering a table requires command-specific headers and column
+// configuration. Callers that want table output must build and render the table
+// themselves using the helpers in this package (NewTable, DefaultTableOptions,
+// etc.).
 func DisplayData(data interface{}, options *DisplayOptions) error {
 	if options == nil {
 		options = DefaultDisplayOptions()
@@ -41,9 +48,9 @@ func DisplayData(data interface{}, options *DisplayOptions) error {
 	case FormatJSON:
 		return displayJSON(data, options.Compact)
 	case FormatTable:
-		fallthrough
+		return fmt.Errorf("table format must be rendered by the caller")
 	default:
-		return nil // Table display is handled separately
+		return fmt.Errorf("unsupported output format: %s", options.Format)
 	}
 }
 
