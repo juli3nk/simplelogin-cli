@@ -1,6 +1,7 @@
 # SimpleLogin CLI
 
-A command-line interface for managing SimpleLogin aliases, domains, contacts, and settings using the SimpleLogin API.
+A command-line interface for managing SimpleLogin aliases, domains, contacts,
+and settings using the SimpleLogin API.
 
 ## Features
 
@@ -16,7 +17,7 @@ A command-line interface for managing SimpleLogin aliases, domains, contacts, an
 ### 1. Set up Authentication
 
 ```shell
-simplelogin-cli auth set-key
+echo "your-api-key" | simplelogin-cli auth set-key
 ```
 
 ### 2. Basic Usage
@@ -43,61 +44,67 @@ simplelogin-cli setting get
 ### Aliases
 
 ```shell
-simplelogin-cli alias activities [alias_id]
-simplelogin-cli alias delete [alias_id]      # Delete alias
-simplelogin-cli alias get [name]             # Get specific alias
-simplelogin-cli alias list [page_id]         # List aliases
-simplelogin-cli alias new [alias]            # Create custom alias
-simplelogin-cli alias options [hostname]
-simplelogin-cli alias random                 # Create random alias
-simplelogin-cli alias toggle [alias_id]      # Toggle alias status
-simplelogin-cli alias update [alias_id]      # Update alias
+simplelogin-cli alias activities [alias_id] [page_id]  # List alias activities
+simplelogin-cli alias delete [alias_id]                # Delete alias
+simplelogin-cli alias get [name]                       # Get specific alias
+simplelogin-cli alias list [page_id]                   # List aliases
+simplelogin-cli alias new [hostname]                   # Create custom alias
+simplelogin-cli alias options [hostname]               # Get alias options
+simplelogin-cli alias random [hostname]                # Create random alias
+simplelogin-cli alias toggle [alias_id]                # Toggle alias status
+simplelogin-cli alias update [alias_id]                # Update alias
+```
+
+### Authentication
+
+```shell
+simplelogin-cli auth set-key    # Set API key (read from stdin)
 ```
 
 ### Contacts
 
 ```shell
-simplelogin-cli contact block [contact_id]                   # Get specific 
-simplelogin-cli contact create [contact_id] [contact_email]  # Create random alias
-simplelogin-cli contact delete [contact_id]                  # Delete alias
-simplelogin-cli contact list [alias_id]                      # List contacts for alias
+simplelogin-cli contact block [contact_id]                 # Toggle contact block status
+simplelogin-cli contact create [alias_id] [contact_email]  # Create contact for an alias
+simplelogin-cli contact delete [contact_id]                # Delete contact
+simplelogin-cli contact list [alias_id]                    # List contacts for alias
 ```
 
 ### Domains
 
 ```shell
 simplelogin-cli domain list                # List domains
-simplelogin-cli domain trash [domain_id]   # List deleted aliases
-simplelogin-cli domain update [domain_id]
+simplelogin-cli domain trash [domain_id]   # List deleted aliases for a domain
+simplelogin-cli domain update [domain_id]  # Update domain
 ```
 
 ### Mailboxes
 
 ```shell
-simplelogin-cli mailbox create [email]       # Create random alias
-simplelogin-cli mailbox delete [mailbox_id]  # Delete alias
+simplelogin-cli mailbox create [email]       # Create mailbox
+simplelogin-cli mailbox delete [mailbox_id]  # Delete mailbox
 simplelogin-cli mailbox list                 # List mailboxes
 ```
 
 ### Settings
 
 ```shell
-simplelogin-cli setting get             # Get current settings
-simplelogin-cli setting get-domains     # List available domains
-simplelogin-cli setting update          # Update settings
+simplelogin-cli setting get          # Get current settings
+simplelogin-cli setting get-domains  # List available domains
+simplelogin-cli setting update       # Update settings
 ```
 
-### 
+### Stats
 
 ```shell
-simplelogin-cli stats                   # Get account statistics
+simplelogin-cli stats    # Get account statistics
 ```
 
-### User 
+### User
 
 ```shell
-simplelogin-cli userinfo get            # Get user information
-simplelogin-cli userinfo update         # Get user information
+simplelogin-cli userinfo get     # Get user information
+simplelogin-cli userinfo update  # Update user information
 ```
 
 ## Output Formats
@@ -122,7 +129,7 @@ simplelogin-cli alias list 0 --no-headers
 
 ### Project Structure
 
-```
+```shell
 ├── cmd/simplelogin-cli/    # CLI entry point
 ├── command/                # CLI commands
 ├── internal/               # Internal packages
