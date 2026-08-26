@@ -5,42 +5,42 @@
     {
       "name": "commitlint",
       "source": "github.com/juli3nk/daggerverse/commitlint@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "gitleaks",
       "source": "github.com/juli3nk/daggerverse/gitleaks@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "gitlocal",
       "source": "github.com/juli3nk/daggerverse/gitlocal@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "go",
       "source": "github.com/juli3nk/daggerverse/go@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "goreleaser",
       "source": "github.com/juli3nk/daggerverse/goreleaser@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "jsonfile",
       "source": "github.com/juli3nk/daggerverse/jsonfile@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "markdown",
       "source": "github.com/juli3nk/daggerverse/markdown@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     },
     {
       "name": "semantic-release",
       "source": "github.com/juli3nk/daggerverse/semantic-release@main",
-      "pin": "60844727a86fa1ce15df6f2e3e7942b843fa4467"
+      "pin": "e289d66c63489fe7c7ba617d43cbcbfdc25bc24a"
     }
   ]
 }

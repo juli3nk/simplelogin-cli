@@ -13,19 +13,48 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.release_status.outputs.tag }}
+      released: ${{ steps.release_status.outputs.released }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Call Dagger Function to release
-        uses: dagger/dagger-for-github@v8.4.1
+      - name: Get current tag
+        id: current_tag
+        run: echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Semantic release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: dagger/dagger-for-github@v8.4.1
         with:
-          call: semantic-release run --repo-token-env GITHUB_TOKEN --repo-token env:GITHUB_TOKEN --ci=true --dry-run=false
+          call: semantic-release run --github-action=true --repo-token-env=GITHUB_TOKEN --repo-token=env:GITHUB_TOKEN --ci=true --dry-run=false
+
+      - name: Checkout latest changes
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set Output Tag and Check if released
+        id: release_status
+        run: |
+          NEW_TAG=$(git describe --tags --abbrev=0)
+          echo "tag=$NEW_TAG" | tee -a "$GITHUB_OUTPUT"
+
+          # On compare l'ancien et le nouveau tag
+          if [ "$NEW_TAG" != "${{ steps.current_tag.outputs.tag }}" ]; then
+            echo "released=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "released=false" | tee -a "$GITHUB_OUTPUT"
+          fi
 
   publish:
     needs: release
+    if: needs.release.outputs.released == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -35,7 +64,7 @@ jobs:
           ref: ${{ needs.release.outputs.tag }}
           fetch-depth: 0
 
-      - name: Call Dagger Function to build and push
+      - name: Goreleaser Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         uses: dagger/dagger-for-github@v8.4.1
