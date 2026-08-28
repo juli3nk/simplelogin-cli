@@ -1,0 +1,35 @@
+name: deps
+
+on:
+  workflow_call:
+    inputs:
+      go_version:
+        description: 'Go version to use'
+        required: false
+        type: string
+        default: "1.26.7"
+
+jobs:
+  run-deps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Verify Go modules
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          verb: check
+          args: go:modcheck
+
+      - name: Scan vulnerabilities
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: go --version=${{ inputs.go_version }} vuln
+
+      - name: Check licenses
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          call: go --version=${{ inputs.go_version }} licenses

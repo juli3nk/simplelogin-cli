@@ -85,6 +85,8 @@ func loadApiKeyFile() (string, error) {
 		return "", err
 	}
 
+	//nolint:gosec
+	// false positive: reading config file from trusted user path
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return "", fmt.Errorf("no API key found")

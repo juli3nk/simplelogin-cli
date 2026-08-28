@@ -33,6 +33,8 @@ func Login(email, password, device string) (string, error) {
 		Device:   device,
 	}
 
+	//nolint:gosec
+	// intended behavior: marshaling credentials to send to the API
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal login data: %w", err)

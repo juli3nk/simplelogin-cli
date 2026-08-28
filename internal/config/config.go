@@ -25,6 +25,8 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
+	//nolint:gosec
+	// false positive: reading config file from trusted user path
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return &Config{}, nil

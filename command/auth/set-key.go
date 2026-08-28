@@ -56,6 +56,9 @@ func readAPIKey() (string, error) {
 	return apiKey, nil
 }
 
+// false positive: this is a help text string, not a real credential
+//
+//nolint:gosec
 const setApiKeyDescription = `
 Set the API key used to authenticate with SimpleLogin.
 
