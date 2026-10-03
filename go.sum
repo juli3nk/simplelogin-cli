@@ -21,8 +21,8 @@ github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 h1:El6M4kTTCOh6aBiKaU
 github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510/go.mod h1:pupxD2MaaD3pAXIBCelhxNneeOaAeabZDe5s4K6zSpQ=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/juli3nk/go-utils v0.0.0-20250227104410-da0fdcd45243 h1:f4NoZ3godH2bkiuYvn99m8Z3sIda2bcCS8wueAVQ9Lk=
-github.com/juli3nk/go-utils v0.0.0-20250227104410-da0fdcd45243/go.mod h1:B274D7iAr87jTS11XNlSPJGxp8Aj71KTRn+gG5pZjnk=
+github.com/juli3nk/go-utils v0.0.0-20260908084845-8036fc5a7718 h1:2UcTjpOWyNI05MZoXsIm66AEvW1iRHq//R/Z85Q1eHM=
+github.com/juli3nk/go-utils v0.0.0-20260908084845-8036fc5a7718/go.mod h1:B274D7iAr87jTS11XNlSPJGxp8Aj71KTRn+gG5pZjnk=
 github.com/leodido/go-urn v1.4.0 h1:WT9HwE9SGECu3lg4d/dIA+jxlljEa1/ffXKmRjqdmIQ=
 github.com/leodido/go-urn v1.4.0/go.mod h1:bvxc+MVxLKB4z00jd1z+Dvzr47oO32F/QSNjSBOlFxI=
 github.com/mattn/go-runewidth v0.0.9 h1:Lm995f3rfxdpd6TSmuVCHVb/QhupuXlYr8sCI/QdE+0=

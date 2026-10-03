@@ -68,7 +68,7 @@ func saveApiKeyFile(apiKey string) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 
@@ -76,7 +76,7 @@ func saveApiKeyFile(apiKey string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0600)
+	return os.WriteFile(path, data, 0o600)
 }
 
 func loadApiKeyFile() (string, error) {

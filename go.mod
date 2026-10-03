@@ -4,7 +4,7 @@ go 1.26.7
 
 require (
 	github.com/go-playground/validator/v10 v10.27.0
-	github.com/juli3nk/go-utils v0.0.0-20250227104410-da0fdcd45243
+	github.com/juli3nk/go-utils v0.0.0-20260908084845-8036fc5a7718
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.9.1
 	github.com/zalando/go-keyring v0.2.6

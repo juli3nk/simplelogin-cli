@@ -1,13 +1,15 @@
 package main
 
 import (
-	"log"
+	"fmt"
+	"os"
 
-	"github.com/juli3nk/simplelogin-cli/command"
+	"github.com/juli3nk/simplelogin-cli/internal/cli"
 )
 
 func main() {
-	if err := command.NewSimpleLoginCommand().Execute(); err != nil {
-		log.Fatal(err)
+	if err := cli.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 }
