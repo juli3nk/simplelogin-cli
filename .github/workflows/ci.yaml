@@ -8,118 +8,42 @@ on:
     branches:
       - develop
 
-env:
-  GO_VERSION: "1.26.7"
-  DAGGER_NO_NAG: "1"
-
 jobs:
   changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      refs_base: ${{ steps.git-change-refs.outputs.base_ref }}
-      refs_head: ${{ steps.git-change-refs.outputs.head_ref }}
-      files_all: ${{ steps.files.outputs.all }}
-      files_md: ${{ steps.files.outputs.md }}
-      files_yaml: ${{ steps.files.outputs.yaml }}
-      files_json: ${{ steps.files.outputs.json }}
-      files_go: ${{ steps.files.outputs.go }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+    uses: juli3nk/ci-shared/.github/workflows/changes.yaml@main
+    with:
+      lang_ext: "go"
 
-      - name: Resolve git range
-        id: git-change-refs
-        uses: juli3nk/ci-context@main
-
-      - name: Detect changed files
-        id: git-changed-files
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          call: gitlocal changed-files --base-ref=${{ steps.git-change-refs.outputs.base_ref }} --head-ref="${{ steps.git-change-refs.outputs.head_ref }}" --ext="md" --ext="go" --ext="yaml:yaml" --ext="yaml:yml" --ext="json" github-output
-
-      - name: Export changed files outputs
-        id: files
-        run: |
-          echo '${{ steps.git-changed-files.outputs.output }}' >> "$GITHUB_OUTPUT"
-
-  git-checks:
+  checks:
     needs: changes
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Lint commits
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          call: commitlint lint --from ${{ needs.changes.outputs.refs_base }} --to ${{ needs.changes.outputs.refs_head }} --default-config
-
-      - name: Scan for secrets
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          verb: check
-          args: gitleaks:detect
+    uses: juli3nk/ci-shared/.github/workflows/git-checks.yaml@main
+    with:
+      refs_base: ${{ needs.changes.outputs.refs_base }}
+      refs_head: ${{ needs.changes.outputs.refs_head }}
 
   lint:
-    needs: [changes, git-checks]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+    needs: [changes, checks]
+    uses: juli3nk/ci-shared/.github/workflows/lint-generic.yaml@main
+    with:
+      files_md: ${{ needs.changes.outputs.files_md }}
+      files_yaml: ${{ needs.changes.outputs.files_yaml }}
+      files_json: ${{ needs.changes.outputs.files_json }}
 
-      - name: Install Dagger
-        uses: dagger/dagger-for-github@v8.4.1
-
-      - name: Lint Markdown
-        if: ${{ fromJSON(needs.changes.outputs.files_md)[0] != null }}
-        run: |
-          dagger call markdown lint --paths-json='${{ needs.changes.outputs.files_md }}'
-
-      - name: Lint JSON
-        if: ${{ fromJSON(needs.changes.outputs.files_json)[0] != null }}
-        run: |
-          dagger call jsonfile lint --paths-json='${{ needs.changes.outputs.files_json }}'
-
-      - name: Lint Go
-        if: ${{ fromJSON(needs.changes.outputs.files_go)[0] != null }}
-        run: |
-          dagger call go --version=${{ env.GO_VERSION }} lint --paths-json='${{ needs.changes.outputs.files_go }}'
-
-      - name: Check Go formatting
-        if: ${{ fromJSON(needs.changes.outputs.files_go)[0] != null }}
-        run: |
-          dagger call go --version=${{ env.GO_VERSION }} fmt --paths-json='${{ needs.changes.outputs.files_go }}'
-
-  deps:
-    needs: [changes, git-checks]
-    if: ${{ fromJSON(needs.changes.outputs.files_go)[0] != null }}
-    uses: $/.github/workflows/deps.yaml
+  lint-go:
+    needs: [changes, checks]
+    uses: juli3nk/ci-shared/.github/workflows/go-lint.yaml@main
     with:
       go_version: ${{ vars.GO_VERSION }}
+      files_go: ${{ needs.changes.outputs.files_lang }}
 
-  build-and-test:
-    needs: [lint, deps]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+  deps:
+    needs: [changes, checks]
+    if: ${{ fromJSON(needs.changes.outputs.files_lang)[0] != null }}
+    uses: juli3nk/ci-shared/.github/workflows/go-deps.yaml@main
+    with:
+      go_version: ${{ vars.GO_VERSION }}
+      check_licenses: false
 
-      - name: Build
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          call: goreleaser build export --path=./dist
-
-      - name: Smoke test (CLI execution)
-        run: ./dist/simplelogin-cli --help
+  build:
+    needs: [lint-go, deps]
+    uses: juli3nk/ci-shared/.github/workflows/go-build.yaml@main

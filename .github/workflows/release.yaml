@@ -4,73 +4,38 @@ on:
   push:
     branches:
       - main
-
-env:
-  DAGGER_NO_NAG: "1"
+  workflow_dispatch:
 
 jobs:
+  lint-go:
+    uses: juli3nk/ci-shared/.github/workflows/go-lint.yaml@main
+    with:
+      go_version: ${{ vars.GO_VERSION }}
+      check_all: true
+
   deps:
-    uses: $/.github/workflows/deps.yaml
+    uses: juli3nk/ci-shared/.github/workflows/go-deps.yaml@main
+    with:
+      go_version: ${{ vars.GO_VERSION }}
+      check_licenses: false
+
+  build:
+    needs: [lint-go, deps]
+    uses: juli3nk/ci-shared/.github/workflows/go-build.yaml@main
 
   release:
-    needs: deps
-    runs-on: ubuntu-latest
+    needs: build
     permissions:
       contents: write
-    outputs:
-      tag: ${{ steps.release_status.outputs.tag }}
-      released: ${{ steps.release_status.outputs.released }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Get current tag
-        id: current_tag
-        run: echo "tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '')" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Semantic release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          call: semantic-release run --github-action=true --repo-token-env=GITHUB_TOKEN --repo-token=env:GITHUB_TOKEN --ci=true --dry-run=false
-
-      - name: Checkout latest changes
-        uses: actions/checkout@v7
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Set Output Tag and Check if released
-        id: release_status
-        run: |
-          NEW_TAG=$(git describe --tags --abbrev=0)
-          echo "tag=$NEW_TAG" | tee -a "$GITHUB_OUTPUT"
-
-          # On compare l'ancien et le nouveau tag
-          if [ "$NEW_TAG" != "${{ steps.current_tag.outputs.tag }}" ]; then
-            echo "released=true" | tee -a "$GITHUB_OUTPUT"
-          else
-            echo "released=false" | tee -a "$GITHUB_OUTPUT"
-          fi
+    uses: juli3nk/ci-shared/.github/workflows/release.yaml@main
 
   publish:
     needs: release
     if: needs.release.outputs.released == 'true'
-    runs-on: ubuntu-latest
     permissions:
       contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.release.outputs.tag }}
-          fetch-depth: 0
-
-      - name: Goreleaser Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          call: goreleaser release --token-env GITHUB_TOKEN --token env:GITHUB_TOKEN
+      packages: write
+    uses: juli3nk/ci-shared/.github/workflows/go-publish.yaml@main
+    with:
+      released: ${{ needs.release.outputs.released }}
+      tag: ${{ needs.release.outputs.tag }}
