@@ -2,15 +2,19 @@ version: 2
 
 project_name: simplelogin-cli
 
+changelog:
+  disable: true
+
 builds:
-  - id: simplelogin-cli
-    main: ./cmd/simplelogin-cli
-    binary: ./simplelogin-cli
+  - main: ./cmd/simplelogin-cli
     env:
       - CGO_ENABLED=0
     ldflags:
       - -s
       - -w
+      - -X github.com/juli3nk/simplelogin-cli/internal/cli.appVersion={{.Version}}
+      - -X github.com/juli3nk/simplelogin-cli/internal/cli.appCommit={{.Commit}}
+      - -X github.com/juli3nk/simplelogin-cli/internal/cli.appBuildDate={{.Date}}
     goos:
       - linux
     goarch:
