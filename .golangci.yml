@@ -2,6 +2,11 @@ version: "2"
 
 linters:
   enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
     - gosec
     - revive
     - misspell
@@ -11,6 +16,6 @@ linters:
         - name: exported
           disabled: true
 
-formaters:
+formatters:
   enable:
     - gofumpt
